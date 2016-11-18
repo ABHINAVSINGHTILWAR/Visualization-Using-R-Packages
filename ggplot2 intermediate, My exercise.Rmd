@@ -1,0 +1,86 @@
+---
+title: "ggplot Intermediate exercises"
+output: html_document
+---
+## ggplot from the ggplot2 package
+### Introducing ggplot
+
+Students will create and enhance basic graphs using the ggplot function of ggplot2
+
+* Histograms/Density
+* Boxplots
+* Bar charts
+
+Enhancements include
+* Setting facets
+
+We will use the ggplot2 diamonds dataset.
+```{r load packages and data}
+library(ggplot2)
+library(dplyr)  # to group categories for bar charts
+
+head(diamonds) 
+str(diamonds) 
+dim(diamonds) 
+
+set.seed(1) 
+diamondsmall <- diamonds[sample(nrow(diamonds), 2500),]
+
+```
+
+Q1) We will examine diamond depth and its relationship to other diamond factors. First, create two histograms, both for the depth attributes, using a diamondsmall.p ggplot object. The first histogram should use the binwidth attribute and the second the bins attribute - experiment with these values until you find a distribution that appears to be reasonably characteristic of the data. Do the same for price.
+```{r Q1: histogram binwidth}
+diamondsmall.p <- ggplot(data = diamondsmall, aes(x = depth))
+diamondsmall.p + geom_histogram(binwidth = 1, color = 'white', fill = 'cyan1') 
+diamondsmall.p + geom_histogram(bins = 20, color = 'gray', fill = 'coral1') 
+
+diamondsmall.p <- ggplot(data = diamondsmall, aes(x = price))
+diamondsmall.p + geom_histogram(binwidth = 2500, color = 'white', fill = 'cyan1') 
+diamondsmall.p + geom_histogram(bins = 20, color = 'gray', fill = 'coral1') 
+```
+<i>How would you describe the dispersion of the two attributes: depth and price?</i>
+<font color=red>The price is severely right skewed while the depth is symmetrical. As the price falls, there are more low priced diamonds while as depth falls, there are fewer 'shallow' diamonds.</font>
+
+Q2) Create stacked histograms for depth and one for price using the same binwidths but include a fill aesthetic mapped to clarity. 
+```{r Q2: histogram categories}
+diamondsmall.p <- ggplot(data = diamondsmall, aes(x = depth))
+diamondsmall.p + geom_histogram(aes(fill = clarity), binwidth = 1, color = 'white') 
+
+diamondsmall.p <- ggplot(data = diamondsmall, aes(x = price))
+diamondsmall.p + geom_histogram(aes(fill = clarity), binwidth = 2500, color = 'white') 
+
+```
+<i>Did you find anything interesting? (Note: the clarity quality ranges from I1 (lowest) to IF (highest)</i>
+<font color=red>Regarding depth, it appears that the extreme clarity values (I1, VVS1, IF) are least frequent across all bins - they are indeed rare. This distribution appears to hold for price as well, though interestingly, the highest quality clarity does not appear with the most expensive diamonds. One explanation might be the the price/clarity relationship is exponential - an already expensive diamond with the highest quality clarity would be priced out of the marketplace.</font>
+
+Q3) Continuing with the theme of variable distribution examination, use a boxplot geom to identify depth outliers. Do NOT include groupings (this is new) and set the outlier color to red. Then create a density plot for depth.
+```{r Q3: boxplot and density}
+diamondsmall.p <- ggplot(data = diamondsmall, aes(x = 'all', y = depth)) # any constant for x will work
+diamondsmall.p + geom_boxplot(outlier.colour="red") 
+
+diamondsmall.p <- ggplot(data = diamondsmall, aes(x = depth))
+diamondsmall.p + geom_density()
+
+```
+<i>What stands out about the representations of the depth distribution?</i>
+<font color=red>The boxplot is reasonably symmetrical and the density plot confirms this symmetry. As depth is a physical property, it is reasonable to assume that it may follow an approximate normal distribution (see Taleb's 'Mediocristan').</font> 
+
+Q4) Next, create a boxplot for depth using color (of the diamond) as the grouping variable (map to aesthetics to color)
+```{r Q4: boxplot with groups}
+# Use fill to reinforce the category distinctions
+diamondsmall.p <- ggplot(data = diamondsmall, aes(x = color, y = depth, fill = color))
+diamondsmall.p + geom_boxplot() 
+```
+<i>Is there anything interesting or predictable about the chart?</i>
+<font color=red>The depth values appear to be fairly consistent across colors. In other words, it does not appear a higher depth value is any more likely to be associated with one color than another.</font>
+
+Q5) Using the dplyr grouping and geom_bar, create a bar chart showing the maximum value of depth by color.
+```{r Q5: bar chart}
+# library(dplyr) declared above
+color.groups <- group_by(diamondsmall, color)
+temp.diamond.df2 <- summarise(color.groups, max(depth))
+names(temp.diamond.df2) <- c('color','depth')
+diamondsmall.p <- ggplot(data = temp.diamond.df2, aes(x = color, y = depth, fill = color))
+# stacked bars
+diamondsmall.p + geom_bar(stat = 'identity', color = 'white') 
+```

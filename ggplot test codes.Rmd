@@ -1,0 +1,99 @@
+ra---
+title: "ggplot exam"
+output: html_document
+---
+## ggplot2 Exam
+
+Instructions: This is an open notes, book, internet, files test; the only restriction is that students cannot collaborate (e.g., through communication, passing files back and forth, etc.). Run the code in the first code chunk below to create a data frame. Then answer each of the  questions below by completing the R code to create a graph that meets the requested criteria. Save the rmd file repeatedly over the course of the exam. Each question is independent of the other; i.e., the results of one question are not affected by the output of another question. 
+
+Accept ggplot2 defaults for any property not explicitly called for in the question.
+
+Good luck!
+
+Run the code provided below to create a music.df.2015 data frame and music.df.2014 data frame represeting mock data concerning music sales.
+```{r load packages and data}
+library(ggplot2)
+library(scales)
+
+kVectorSize <- 60; 
+kAvg <- 100000; kSD <- 20000; kLengthLow <- 190; kLengthHigh <- 420
+set.seed(1)
+
+downloads.numeric.2015 <- rnorm(kVectorSize, kAvg, kSD)
+sales.numeric.2015 <- rnorm(kVectorSize, kAvg, kSD)
+length.numeric.2015 <- runif(kVectorSize, kLengthLow, kLengthHigh)
+genre.nominal.2015 <- sample(c('RnB','Hip Hop','EDM','Pop','Indie', 'Metal'), kVectorSize, replace = TRUE)
+performer.type.nominal.2015 <- sample(c('Individual','Group','Duet'), kVectorSize, replace = TRUE)
+instrumental.binary.2015 <- sample(c("False", "True"), kVectorSize, replace = TRUE, prob = c(.9, .1))
+music.df.2015 <- data.frame(downloads.numeric.2015, sales.numeric.2015, length.numeric.2015, genre.nominal.2015, performer.type.nominal.2015, instrumental.binary.2015)
+
+downloads.numeric.2014 <- rnorm(kVectorSize, kAvg, kSD)
+sales.numeric.2014 <- rnorm(kVectorSize, kAvg, kSD)
+length.numeric.2014 <- runif(kVectorSize, kLengthLow, kLengthHigh)
+genre.nominal.2014 <- sample(c('RnB','Hip Hop','EDM','Pop','Indie', 'Metal'), kVectorSize, replace = TRUE)
+performer.type.nominal.2014 <- sample(c('Individual','Group','Duet'), kVectorSize, replace = TRUE)
+instrumental.binary.2014 <- sample(c("False", "True"), kVectorSize, replace = TRUE, prob = c(.9, .1))
+music.df.2014 <- data.frame(downloads.numeric.2014, sales.numeric.2014, length.numeric.2014, genre.nominal.2014, performer.type.nominal.2014, instrumental.binary.2014)
+
+```
+
+Question 1: Scatterplot
+Create a ggplot object called 'p' and assign to it from the music.df.2015 data frame 'downloads.numeric.2015' as the x aesthetic and 'sales.numeric.2015' as the y aesthetic. Then create a graph using this object and add the appropriate geom for rendering a scatterplot (but do not modify the object) assigning the color aesthetic to 'performer.type.nominal.2014'. Title the x-axis 'Music Downloads' and use a comma for the x-axis numbers and title the y-axis 'Music Sales' and format the y-axis numbers with dollar signs.
+```{r Question 1}
+ggplot.p <- ggplot(data = music.df.2015, aes(x = downloads.numeric.2015, y = sales.numeric.2015)) 
+ggplot.p + geom_point(aes(color = 'performer.type.nominal.2014')) + labs(x = "Music Downloads", y = "Music Sales") + scale_y_continuous(labels = dollar)
+ 
+
+```
+
+Question 2: Bubbleplot
+Create a ggplot object called 'p' with no parameters or properties set. Add to this object without modifying it five layers to render a graph:
+layer 1: Add the appropriate geom for rendering a bubbleplot using the music.df.2015 data frame fields 'downloads.numeric.2015' as the x aesthetic, 'sales.numeric.2015' as they y aesthetic, and 'length.numeric.2015' as the size aesthetic (do not show the accompanying legend), setting all glyphs to 'cyan1' color.
+layer 2: Add the appropriate geom for rendering a scatterplot using the music.df.2014 data frame fields 'downloads.numeric.2014' as the x aesthetic, 'sales.numeric.2014' as they y aesthetic, setting all glyphs to 'coral1' color.
+layer 3: Add the appropriate geom for rendering a line using the lm method and using the color 'red' with no confidence interval displayed
+layer 4: Add the appropriate geom for rendering a line using the color 'skyblue' with no confidence interval displayed
+layer 5: Add the appropriate geom for rendering the text of the value instrumental.binary.2015 next to each of the music.df.2015 glyphs rendered in the first layer only for those values where instrumental.binary.2015 is equal to 'True' (hint: use music.df.2015[music.df.2015$instrumental.binary.2015 == 'True',] for the data parameter)
+```{r Question 2}
+1)bubbleplot.p <- ggplot(data = music.df.2015, 
+                         aes(x = downloads.numeric.2015, y = sales.numeric.2015, size = length.numeric.2015))
+                         
+bubbleplot.p + layer(geom = 'point', stat = 'identity', position = 'identity', params=list(color='cyan1'))
+
+
+2)bubbleplot.p <- ggplot(data = music.df.2015, 
+                         aes(x = downloads.numeric.2015, y = sales.numeric.2015, size = length.numeric.2015))
+                         
+bubbleplot.p + layer(geom = 'point', stat = 'identity', position = 'identity', params=list(color='coral1'))
+
+3) bubbleplot.p + 
+	geom_point(color = "skyblue") + 
+	geom_smooth(method = 'lm', se = FALSE, color = "red", linetype = 3, size = 1) +
+	geom_smooth(se = FALSE, color = "red", linetype = 5, size = .5)
+	
+4) bubbleplot.p + 
+	geom_point(color = "red") + 
+	geom_smooth(method = 'lm', se = FALSE, color = "skyblue", linetype = 3, size = 1) +
+	geom_smooth(se = FALSE, color = "skyblue", linetype = 5, size = .5)
+
+
+```
+
+Question 3: Histogram
+Create a ggplot object called 'p' and assign to it from the music.df.2014 data frame 'sales.numeric.2014' and add to this object the appropriate aesthetic for rendering a histogram assigning to this aesthetic the field 'sales.numeric.2014'. Then create a graph using this object and the appropriate geom for a histogram, using 'genre.nominal.2014' assigned to the appropriate aesthetic to create a stacked histogram (use the color 'white' as the border for each glyph).
+```{r Question 3}
+
+histogram.p <- ggplot( data = music.df.2014, aes(x = sales.numeric.2014, fill = genre.nominal.2014)) 
+histogram.p + geom_histogram( position="stack", color = 'white')+ stat_bin(binwidth = 30)
+```
+
+Question 4: Boxplot
+Create a ggplot object called 'p' and assign to it from the music.df.2015 data frame 'performer.type.nominal.2015' as the x aesthetic, 'sales.numeric.2015' as the y aesthetic, and 'genre.nominal.2015' as the fill aesthetic. Then create a graph using this object and adding the appropriate geom for rendering a boxplot (but do not modify the object). Assign the color 'red' to outliers in the boxplot, assign a jitter layer (but have the red outliers appear on 'top' of the jitter glyphs), and add a grid facet using 'genre.nominal.2015' for the groupings.
+```{r Question 4}
+
+boxplot.p <- ggplot( data = music.df.2015, aes(x = performer.type.nominal.2015 , y = sales.numeric.2015 , fill = genre.nominal.2015))
+
+boxplot.p + geom_boxplot( color ='red') + geom_jitter(aes('top')) + facet_grid(~genre.nominal.2015)
+
+```
+
+

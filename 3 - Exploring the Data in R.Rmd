@@ -1,0 +1,129 @@
+---
+title: "Exploring data frames in R"
+output: pdf_document
+---
+
+##Learning Themes: Descriptive Statistics
+
+Before we start the rigorous analysis of the data, there are two exercises we need to through: descriptive analysis (including subsetting) and data clean up. In this notebook we address the descriptive analysis; specifically, the generation of summary statistics often grouped by creating conditions for subsetting the data. We will begin with generating overall descriptive statistics.
+
+We will start by reading the UN data into our UNdata data frame. Note that we dropped the sep and header parameters since the defaults, ',' and TRUE, are the values we want.
+```{r read data}
+UNdata <- read.csv(file = 'UNdata.csv', row.names = 1)
+```
+
+If R cannot find the file, an error message will be produced. Even without an error message, it is still a good idea to 'glance' at the data frame to see if anything looks 'odd'.
+```{r explore data}
+names(UNdata) # produces column names
+head(UNdata) # shows first six rows of data
+```
+
+Descriptive statistics often concern distribution parameters such as central tendancy and dispersion (others include skewness, kurtosis and more generically shape and scale parameters). Suppose we want to examine countries by personal income - the first question we might ask is the average of the data. Another common central tendency measure is median (for instance, the government often reports the median rather than average values for family income). Below we calculate the average (using the mean() function) and median (using the median() function) for GDP_PC (essentially represeting the income per person).
+```{r descriptive statistics central tendency}
+mean(UNdata$GDP_PC); median(UNdata$GDP_PC)
+```
+
+
+First note that we used two commands on the same command line, made possible by separating the commands with the semi-colon. R recognizes the two commands and creates two distinct results.
+
+The mean being significantly higher than the median suggests that we may have some large values for GDP_PC (with of course the lower values being bound by zero). To provide a broader view of the dispersion of the data, we turn to the variance, using the var() function, and standard deviation, using the stdev() function (the latter being the square root of the former and thus in units consistent with the measurement of the raw data). These measures give us a sense as to how 'representative' the central tendancy measures are for the overall population.
+```{r descriptive statistics dispersion}
+var(UNdata$GDP_PC); sd(UNdata$GDP_PC)
+```
+
+These functions use all the data available in the GDP_PC field. Other functions that use less than the full set may still give us a better understanding of the nature of the date. The max() function will show as you might expect the largest value for the field used as a parameter; the range() function shows the smallest and largest values in the data. The quantile 'sorts' the data (temporarily, it does not change the actual data) and the breaks the data into fourths, displaying the smallest value and then the top value of each of the four divisions of data.
+```{r descriptive statistics dispersion 2}
+max(UNdata$GDP_PC); range(UNdata$GDP_PC); quantile(UNdata$GDP_PC)
+```
+
+R does not include a function to calculate the mode, i.e., the most frequent occurence of a value in a data set (the actual function mode() returns the 'type' of data for the column passed as the parameter). To calculate the mode, we would need to download one of the many additional packages available with R and will do so in a later module. We could also write our own function in R to calculate the mode but that is beyond the scope of this course. Note too that thus far we have been examining numeric data; if we use character data for parameters with the functions above, R will display an error (e.g., is we tried max(UNdata$continent)). On the other hand, the summary() function works with numeric data (in a manner similar to quantile) and character data (that was read into R as factors - recall the str() command).
+```{r descriptive statistics for vector}
+summary(UNdata$GDP_PC) 
+summary(UNdata$continent)
+```
+
+Given that we have categories (i.e., continents) under which multiple rows are members, the next step for developing a better understanding of the data is to apply the functions above to only data belonging to a certain category, e.g., the range of GDP per capita for citizens of countries in Asia. Before exploring our subsetting options, a new type of data, the boolean, must be reviewed. The boolean is a variable that can take only two values - TRUE or FALSE - often stored as 1 and 0. The reason that this data type is important is that when we ask for subsets in R, our 'condition' (e.g., countries in Africa) is applied to all the data and a boolean value, TRUE or FALSE, is assigned. Then the function we are employing is applied against only those records with a TRUE value.
+
+To better understand the boolean assignment, execute the command below, a test as to whether a row has for its continent attribute the value of 'Asia'.
+```{r select data frame rows}
+UNdata$continent == 'Asia'
+```
+
+We used the == as a test, asking R to 'scroll' through each row and compare the value in the continent field to the value of 'Asia'. For each row, R returned either a TRUE or FALSE. In this case, the first five rows' countries are Afghanistan, Algeria, Argentina, Armenia, and Austria, with only the first country belong to Asia. Reading across, you can see that the values are TRUE, FALSE, FALSE, FALSE, and FALSE - the order of the returned results is consistent with the order of the data.
+
+Recall that we can navigate through a data frame (in this case, our complete data set stored in the UNdata variable) through specifying rows and columns (e.g., UNdata[,'GDP_PC'] displays the value of the per capita GDP for all rows). Instead of specifically telling R which row to display, we substitute the 1 with our condition, UNdata$continent == 'Asia'. If the condition is true, R will 'save' the row, if it is not, R will discard the row. Then R shows the results (i.e., whatever column was identified) for the saved records.
+```{r select column of selected data frame rows}
+UNdata[UNdata$continent == 'Asia','GDP_PC']
+```
+
+The output is a vector containing the set of per capita GDP values from countries on the continent of Asia.
+When accessing the data frame elements, we use square brackets following a row, column identification format since the data frame possesses two dimensions. The results of the command above is a vector with a single dimension. It follows, to access a specific value, we use a single value in the brackets. For instance, the command below produces the second element in the vector returned by the command to retrieve the GDP_PC for countries in Asia. R works inside out - it evaluates the [UNdata$continent == 'Asia','GDP_PC'] test to produce a boolean vector, then the TRUE values are used for accessing the UNdata$GDP_PC values and a vector is producing. Finally, the [2] is applied to the vector.
+```{r select value from selected vector of particular data frame rows}
+UNdata[UNdata$continent == 'Asia','GDP_PC'][5]
+```
+
+We have 'hardcoded' the values we are looking for (in this case, for rows with 'Asia'). We can place a condition in our selection of rows. For instance, we can use the command below to find the per capita GDP of the country that has the highest trust among its citizens.
+```{r conditions}
+UNdata[UNdata$TRST_PEOP == max(UNdata$TRST_PEOP),'GDP_PC'] 
+UNdata[which(UNdata$TRST_PEOP == max(UNdata$TRST_PEOP)),'GDP_PC']
+```
+
+In the first command above, the function max() returns a value, then the == tells R that what is needed is a test as to whether the row being reviewed has the same value of the maximum. If this is the case, then return the value of GDP_PC. The second command is similar - the max() function returns a value, the == establishes that a test is to be performed to determine the boolean value to assign to the row (with TRUE reserved for the match), and then which() returns the row number. To better understand how these two commands differ, it may be helpful to run the 'inside' part of the command (that which is first executed) to view what is returned.
+```{r boolean conditions}
+UNdata$TRST_PEOP == max(UNdata$TRST_PEOP)
+which(UNdata$TRST_PEOP == max(UNdata$TRST_PEOP))
+```
+
+Both commands produce a result that can be used for the selection of the correct row. In the first case, a vector of boolena values is returned and R 'looks' through the values to find a TRUE. In the second case, the which command resturns the explicit row number to be used.
+
+We can examine numeric fields through creating conditions as well. If we want to see the values of TRUST and SAFETY only for countries with an HDI value over .92, we would use the following command.
+```{r select columns of selected rows}
+UNdata[UNdata$HDI>.92,c('TRUST','SAFETY')]
+```
+
+The values returned include data from two columns, so two vectors are returned (this would be true even if only one row was returned - we would have a TRUST vector and a SAFETY vector we a single value each). Given the two dimensions of the returned data, R 'preserves' the associated row name (in this case, country) and displays it even though we did not explicity ask for R to do so.
+
+Suppose we wanted to identify the countries where HDI was greater than .92 as above but also include countries where safety was greater than 90. In other words, return rows where HDI > .92 or SAFETY is > 90. R accommodates compound condition tests using the pipe symbol | to represent or and an ampersand & to represent and. The two commands below demonstrate or and and compund statements.
+```{r compound selection conditions}
+UNdata[UNdata$HDI>.92 | UNdata$SAFETY > 90,c('TRUST','SAFETY','HDI')]
+UNdata[UNdata$HDI>.92 & UNdata$SAFETY > 90,c('TRUST','SAFETY','HDI')]
+```
+
+The first set of data reveals that there are two countries where HDI is greater than 90; the data also includes Georgia and Rawanda as countries where safety is greater than 90. In other words, if a country met one of the two tests (or both at the same time), R retireved the rows from the data frame.
+
+The second command requires that the data frame row achieve both an HDI greater than 90 and a safety score greater than 90. No rows meet this criteria (which can be verified in a quick scan of the data returned from the or test), and no rows are returned.
+
+As seen in the which() command, in R the output of one command can be used as the input (i.e., the parameter) for another.
+
+Read the sentence above again - this is an important feature in R that you will use repeatedly.
+
+The commands below uses the command above (UNdata[UNdata$continent == 'Asia','GDP_PC']) to retrieve the per capita GDP for Asian countries and then calculate the mean and standard deviation just for those records.
+```{r evaluate selected vectors}
+mean(UNdata[UNdata$continent == 'Asia','GDP_PC']); sd(UNdata[UNdata$continent == 'Asia','GDP_PC'])
+```
+
+Note that the second command used the results of our condition test as a parameter for the var() command and the result of the var() function is then passed to the square root function sqrt() to calculate the standard deviation.
+
+The summary(UNdata$continent) revealed that we have five continents in our data set (with Antarctica and Australia not represented). If we would like to see the per capita GDP by each continent, rather than type five distinct commands, one for each continent, we can use other R-supplied functions, such as tapply below.
+```{r tapply}
+tapply(UNdata$GDP_PC, UNdata$continent, mean)
+```
+
+The `tapply()` function takes three parameters: the column of data we are interested in summarizing, the column of data that contains the categories for grouping, and the function to apply to each set of data once it is separated by the values in the second parameter. If you are familiar with SQL, you can easily imagine how the tapply command translates into a SQL statement - `SELECT Average(GDP_PC) from UNdata GROUP BY continent'. R provides a number of other options selecting and organizing data (including a SQL option) but for the moment we will stick with the basics.
+
+There are a number of other commands R provides that allow for the review of groups of data. For a simple frequency count, the table command can be used for both a single column and two columns (note that while you can use as a parameter a numeric or character type, the more variables the column contains, the less valuable the grouping becomes).
+```{r table}
+table(UNdata$continent) 
+table(UNdata$Pop_Cat, UNdata$continent)
+```
+
+In fact, we can use the data frame as a parameter for some functions such as `summary` as shown below.
+```{r summary}
+summary(UNdata)
+```
+
+A few notes to consider - the results show that some columns such as LifeExp have empty cells (designated by the NA). 
+
+Another 'odd' finding is that GNI_PC, though containing numbers, is treated as a factor by R, so the summary command considers the values in this column like those values in continent - each represents a category. The reason for this is that the csv file used comma's to indicate thousands for the GNI_PC column unlike for instance the GDP_PC column.
+
+These properties of the data bring to light a crucial consideration for the data before analysis begins - data 'scrubbing,' i.e., addressing missing data, outliers, and data types. These issues are covered in a later lesson.

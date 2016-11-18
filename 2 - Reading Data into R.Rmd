@@ -1,0 +1,109 @@
+---
+title: "Reading Data into R"
+output: pdf_document
+---
+
+##Learning Themes: Importing Data, Navigating through a Data Frame
+
+R is primarily useful when we bring data into R for analysis. A data set of United Nations country-level data is available in a csv file called UNdata.csv. R provides a number of ways to read data from both files and directly from databases. Given that we have a csv file, we will use the read.csv() command. The UNdata.csv file should be in the same directory as the .rmd file OR a full path set needs to be provided in the read.csv parameter.
+
+```{r read csv}
+ UNdata <- read.csv("UNdata.csv")
+```
+
+We now have available for analysis in R a 'table' of data stored in our UNdata variable. This table consists of rows (our unit of analysis, in this case countries) and columns (the attributes of our unit of analysis). In R we call this table a data frame. Let's explore our UNdata data frame.
+
+What attributes are available for our analysis? To answer this and other questions, R provides functions that we use by 'calling' the function by name and then 'telling' R what data we want to function to use. In this case, we will use dim() and names() functions and 'pass' it our UNdata data frame to review what attributes are provided.
+
+```{r explore data frame}
+dim(UNdata)
+c(nrow(UNdata),ncol(UNdata)) # c combines the results into a single vector; nrow and ncol together provide the same results as dim
+names(UNdata)
+```
+
+The dim() function returns the number of rows and columns; in this case, we have 101 rows (countries) and 25 columns (attributes including the name of the country).
+
+The names() function received the UNdata data frame as a parameter and returned the list of column names (there are 23). The column names are only as informative as the care taken in creating the names in the original csv file. A dictionary of definitions is available at the end of this notebook.
+
+To further explore our data frame columns, we can call on the str() command.
+
+```{r data frame types}
+str(UNdata)
+```
+
+The str() command displays the structure of the data frame. In this case, we learn that there are 101 observations (i.e., countries) with 23 columns (including the identify of the country itself). Then for each column R provides the 'type' of the column (for now think of this as either a number (int, num) or character string (Factor)) based upon the data read from the csv file. Finally, the first several values of each column are provided. For instance, the first three values of the LifeExp attribute are NA (missing), 73.4, and 76.1 (in years). We will return to review the data types in greater depth later.
+
+A more succinct and cleaner view of a few rows of the data is provided by the head() function. This function takes two parameters: the identity of the data frame we wish to view and the number of rows we wish to view of this data frame. We will look at the first four rows of the UNdata data frame.
+
+```{r data frame data }
+head(UNdata)
+```
+
+
+We can view the data of a specific row and/or column through reference to the rows/columns via the use of brackets. For instance, imagine we want to know the Life Expectancy of citizens of Algeria. We conveniently know that this data is stored in the fourth column of the second row (in this case, as seen from the results of the head function, this is the value of LifeExp for the Algeria). Use these values as reference in the command below.
+
+```{r data frame cells}
+UNdata[2, 4]
+```
+
+The first parameter used above (i.e., 2) is the row identity and the second parameter (i.e., 4) is the column identity. Note that we used square brackets when viewing the data 'directly' rather than the parentheses used with functions. If one parameter is omitted, all the values will appear. For instance, the command UNdata[,4] returns all 101 values for LifeExp.
+
+
+To view the data of a particular column, we can use a relative (# of the column) reference in bracket and leave the row number (the value before the comma in the brackets) unassigned. To achieve the same result, we can use the dollar sign  with the name of the column..
+```{r data frame row and columns}
+UNdata[,5]
+UNdata$Edu
+```
+
+The commands above return a vector, and we can reference individual elements within the vector, accomplishing the same results as if we specify a row, column in a data frame
+```{r cells alternate}
+UNdata[2,5]   # retrieve the value in the second row and fifth column
+UNdata[,5][2] # retrieve the second element from the fifth vector
+```
+
+We can also use the name of the column in the bracket, such as the example below with the column 'Edu'. Note that we need to put quotes around the column name; otherwise, R will look for a variable of the same name.
+
+```{r cells alternate 2}
+UNdata[2,'Edu']
+```
+
+We have not named the rows in this data frame so a reference to UNdata['Algeria','Edu'] will not return any values. However, we can name the rows. One solution to row-naming is to identify the column to be used for the names when the data is read into R. See below for a modified read.csv() command.
+
+```{r parameters}
+UNdata <- read.csv(file = 'UNdata.csv', header = TRUE, sep = ',', row.names = 1)
+```
+
+There are three lessons to be gained from the read.csv() function above. The first lesson is that we used a new parameter, row.names, and set its value to 1, which R interprets as using the first column as the row name values. The first column in the data set is now continent (the dim() command will now show 22 rather than 23 columns and the names() command begins with continent).
+
+The second lesson is that, because we used the same data frame name of UNdata as we used the first time we called read.csv(), the existing data is replaced with the new data. Thus if anything had changed in the original csv file between the first read and the second, we would have the updated information. Secondly, if we had changed any data in the data frame, it would be lost.
+
+The third lesson concerns the use of parameters. Most functions take parameters, i.e., the values the function will use to perform its work. There are three specific aspects to parameters that will make their use easier:
+
+<li>These parameters have two components: a name and a value. In the read.csv() function above, we have used four parameters: file, header, sep, and now row.names. The values are respectively 'UNdata.csv', TRUE, ',', and 1.
+
+<li>Some of the parameters may be required by the function, e.g., read.csv() requires a value for the file parameter. In other cases, parameters are not required, e.g., we did not include row.names the first time we called the read.csv() function (and thus the rows did not have names).
+
+<li>Some of the parameters have 'default' values and if we accept these defaults values, we need not include the parameters in the function call. For instance, the parameter header has in fact a default of TRUE. So our use of this parameter above in unnecessary.
+
+Now we can reference data frame values by more intuitive values of row names and column names as demonstrated below.
+
+```{r cells by name}
+UNdata['Algeria','Edu'] #Note that we have fewer columns than before so the commands above will not return the same results if refereing a column by #
+```
+
+Rather than access a single value, we may want a series of values, selecting subsets of multiple rows and/or columns. The command below accesses the 3rd, 4th, and 5th column of the 2nd row, with the colon indicating the retrieval of multiple, consecutive columns.
+
+```{r row and columns}
+UNdata[2, 3:8]
+```
+
+What if we do not want consecutive columns (or rows)? R provides the c function - think of it as meaning 'combine' or 'concatenate'. Through the c function we create a vector, which is simply a variable that can hold multiple values (as opposed to a scalar, which holds a single value). The command below accesses the 2nd row and the 3rd, 5th, and 8th column of the 2nd row.
+```{r row and nonconsecutive columns}
+UNdata[2, c(3,5,8)]
+```
+
+The c function supports the creation of text values, too, as shown below.
+```{r row and nonconsecutive columns by name}
+UNdata['Algeria', c('LifeExp','GNI_PC','CPI')]
+```
+

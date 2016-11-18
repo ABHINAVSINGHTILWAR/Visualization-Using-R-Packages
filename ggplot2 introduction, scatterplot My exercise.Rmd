@@ -1,0 +1,87 @@
+---
+title: "ggplot Introduction, exercise"
+output: html_document
+---
+## ggplot from the ggplot2 package
+### Introducing ggplot
+
+In this exercise students will create and enhance scatterplots and bubble charts using the ggplot function of ggplot2. We will continue with the 'greenest US cities' 2009 dataset.
+```{r load packages and data}
+library(ggplot2)
+
+green.cities.df <- read.csv('Greenest_Cities_in_the_US_2009.csv')
+head(green.cities.df) 
+str(green.cities.df) 
+dim(green.cities.df) 
+```
+
+We will explore whether rainfall (average.annual.rainfall) and average floor space (total.floor.space/number.of.buildings) influence emissions.prevented. For instance, rainfall as representative of humidity and climate may influence how relevant efforts to reduce emissions (it may be harder to make an impact in a mild, dry climate). The efforts to reduce emissions may have diminishing returns for larger buildings. 
+
+Q1) Create a scatterplot by first producing a ggplot object with the data and basic scatterplot aesthetic attributes using emissions.prevented and the ratio of total.floor.space/number.of.buildings and then adding the point geom to produce the scatterplot.
+```{r Q1: scatterplot emissions and average floor space}
+green.cities.p <- ggplot(data = green.cities.df, 
+                         aes(x = total.floor.space/number.of.buildings, y = emissions.prevented)) 
+green.cities.p + geom_point() 
+# given that emissions is our outcome or dependent variable, we typically would map it as the y position aesthetic
+```
+<i>Does there appear to be any pattern in the scatterplot</i><p>
+<font color=red>As the size of the buildings increases, the emissions prevented appears to increase as well. This tells us that the emission prevented is not a fixed amount (e.g., 'x' amount prevented no matter what the size). A linear relationship then would be our intuitive guess - the more space, the more emissions prevented.</font>
+
+Q2) Render the same graph above and add two smooth geoms - one using the lm method (red) and the other using the default loess method (orange).
+```{r Q2: scatterplot with lines}
+green.cities.p <- ggplot(data = green.cities.df, 
+                         aes(x = total.floor.space/number.of.buildings, y = emissions.prevented)) 
+green.cities.p + geom_point() + 
+	geom_smooth(color = 'orange', se = F) + 
+	geom_smooth(color = 'red', se = F, method = lm)
+
+```
+<i>Does one of the lines appear to fit better than the other?</i><p>
+<font color=red>The loess is reasonably straight. It seems like a linear relationship is a reasonable finding, though I might remove the really large building as an outlier to see if the loess shows hints of exponential growth.</font>
+
+Q3) Let's add rainfall to the scatterplot (without the lines) to create a bubble chart. Before viewing the graph, ask yourself what you expect to see - larger sizes clustered (suggesting a relationship) or sizes appearing either roughly the same (not enough variance in the data) or randomly placed sizes (variation without relationships). Color the glyphs skyblue.
+```{r Q3: bubblechart with rainfall}
+green.cities.p <- ggplot(data = green.cities.df, 
+                         aes(x = total.floor.space/number.of.buildings, y = emissions.prevented, size = average.annual.rainfall)) 
+green.cities.p + geom_point(color = "skyblue") 
+```
+<i>Any rainfall patterns apparent?</i><p>
+<font color=red>No pattern is apparent except possibly that no 'dry' climates exist in the first quadrant. However, this is as likely attributable to the paucity of data points as a finding.</font>
+
+Q4) We next enhance the presentation of the bubble chart: add a title, 'Building Size and Conservation', and change the relative size of the glyphs using a radius as the mapping measure (a distinct scale function not covered in the demo: see scale_radius()). 
+```{r Q4: bubblechart enhanced}
+green.cities.p <- ggplot(data = green.cities.df, 
+                         aes(x = total.floor.space/number.of.buildings, y = emissions.prevented, size = average.annual.rainfall)) 
+green.cities.p + geom_point(color = "skyblue") +
+	labs(title = "Building Size and Conservation") + 
+  scale_radius()
+
+```
+<i>Any rainfall patterns now apparent?</i><p>
+<font color=red>It does not appear the 'exaggerated' size differences revealed anything new.</font>
+<font color=green>Using radius rather than area of a circle for glyph sizes is not considered best practice. Indeed, some argue against circles for representing quantities altogether, as it is more difficult to compare areas of multiple circles compared to for instance bars (e.g., is circle A bigger than circle B AND C?). For more, see <i>Visualize This</i> by Nathan Yau</font>.
+
+Q5) Perhaps the linear average floor space to emissions relationships is by region. Drop the rainfall aesthetic and add the region mapping it to color. Create a scatterplot with lines (smooth geoms) imposed for each region and an overall line (as included in Q2) using method = lm for both. 
+```{r Q5: multiple geoms}
+# If instead, the color aesthetic is declared in the ggplot command, other layers can reference these values. In this case, this results in the rendering of two lines (for the two membership values, yes and no)
+green.cities.p <- ggplot(data = green.cities.df, 
+                         aes(x = total.floor.space/number.of.buildings, y = emissions.prevented,  color = region)) 
+green.cities.p + geom_point() + 
+	geom_smooth(method = "lm", se = FALSE, fullrange = T) +
+	geom_smooth(aes(group = 1), method = "lm", se = FALSE, color = 'black') 
+
+```
+<i>Any variation in the relationship by region?</i><p>
+<font color=red>There are probably too few data points by region to draw any conclusions, though for the most part the relationships appear to be similar with the exception of the Northeast.</font>
+
+Q6) Create a scatterplot (no lines). Label and color red the MSAs (metropolitan statistical areas) with emissions prevented over 40,000. 'Nudge' the labels down slightly on the graph.
+```{r Q6: scatterplot and labels}
+# library(mgcv) - already declared
+green.cities.p <- ggplot(data = green.cities.df, 
+                         aes(x = total.floor.space/number.of.buildings, y = emissions.prevented)) 
+green.cities.p + 
+	geom_point(data = green.cities.df[green.cities.df$emissions.prevented <= 40000,]) +
+	geom_point(data = green.cities.df[green.cities.df$emissions.prevented > 40000,], color = 'red') +
+  geom_text(data = green.cities.df[green.cities.df$emissions.prevented > 40000,], aes(label = msa), nudge_y = -1000, size = 4)
+# Note: the nudge is in units of the axis, not pixels, so the nudge is context-specific
+```

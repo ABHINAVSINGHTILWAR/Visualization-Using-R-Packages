@@ -1,0 +1,149 @@
+---
+title: "qplot Homework"
+output: pdf_document
+---
+## qplot from the ggplot2 package
+In this rmd file you are to add R commands where indicated to answer questions through the creation of graphs via qplot. Each of the ten questions is two points (correct = 2 points, almost correct 1 point, otherwise 0 points). Turn in both this edited rmd file and a pdf of the rendered rmd file.
+
+We will examine data concerning college enrollment. First, read the data (provided via a csv file) into R.
+```{r read data into R}
+library(ggplot2)
+colleges.df <- read.csv("college.csv")
+head(colleges.df)
+str(colleges.df)
+dim(colleges.df)
+```
+
+The dataset consists of the college name and 14 attributes:
+ - private: is the college private (YES) or not private (NO)
+ - application.count: number of applications to the college
+ - acceptance.count: of the applicants, number who were accepted for enrollment
+ - enrollment.count: of the applicants, number who accepted
+ - enrolled.from.top.10.percent: percent of enrollees who were in the top 10% of their high school class
+ - enrolled.from.top.25.percent: percent of enrollees who were in the top 25% of their high school class
+ - fulltime.undergrad.count: count of undergraduate students enrolled full time
+ - parttime.undergrad.count: count of undergraduate students enrolled part time
+ - phd.granted.count: number of doctorate degrees awarded
+ - terminal.degree.count: number of terminal degrees awarded
+ - s.f.ratio
+ - perc.alumni: percent alumni who donate to the school
+ - expenditures: school annual expenses
+ - graduation.rate: graduate rate
+
+Added to the data is a graduation rate category, with graduation rates from 0 to 33% labeled low, 34 to 70% labeled 'medium', and 81 and over labeled 'high'.
+```{r create graduation category}
+colleges.df$graduation.category <- cut(colleges.df$graduation.rate, breaks = c(0,33,70,100), labels = c('low', 'medium', 'high'))
+```
+
+Some of the attributes we will be working with include graduation.rate, application.count, acceptance.count, enrollment.count, enrolled.from.top.10.percent, perc.alumniand whether the school is private. Before examining attribute relationships, it is helpful to understand the distribution of the data. 
+
+Q1) Create a histogram using the attribute graduation rate (graduation.rate) and map the gradudation category to the fill aesthetic; the breaks should appear in 5 unit increments.
+```{r Q1: graduation rate histogram}
+qplot(x = graduation.rate, geom = 'histogram', data = colleges.df, fill = graduation.category, binwidth = 5)
+```
+
+Q2) Create a density plot for alumni donation percentage (perc.alumni); smooth the curve (adjust factor to 10) and fill it with the 'private' attribute (set the transparency to 40%).
+```{r Q2: density}
+qplot(x = perc.alumni, data = colleges.df, geom = 'density', adjust = 10, fill = private, alpha=I(.4))
+
+```
+
+Let's start with the assumption that students wish to graduate. Accordingly, demand (application.count) for colleges with high graduate rates (graduation.rate) should be relatively high. 
+
+Q3) Create a scatterplot examining this assumption about graduation rate and demand. Include a line (colored as darkgoldenrod3) representing the relationship in the plot (do not include the confidence interval). Label the x axis 'Graduation Rate' and the y axis 'Applications'. Only show colleges with 25,000 or fewer applications (by manipulating the graph presentation, not by manipulating the dataset). Color the glyphs skyblue.
+```{r Q3: scatterplot applications and graduation rate}
+qplot(x= graduation.rate , y = application.count,data = colleges.df,xlab = "Graduation Rate", ylab = "Applications",ylim = c(0, 25000)) +geom_smooth(method = "loess",color = I("darkgoldenrod3"), se = FALSE )+ geom_point(color = I('skyblue'))
+
+```
+
+<i>In a sentence, how would you interpret the relationship between the two variables?</i><p>
+
+
+The relationship between graduation rates and applications may be better clarified by looking at segments of graduation rates. In other words, applicants do not respond to slight difference in graduation rates (10% vs. 12%) but material differences (10% vs. 50%). 
+
+Q4) Create a single graph with three boxplots, one for each graduation category (the data frame derived attribute), for applications, restricting the y axis to 7500.
+```{r Q4: boxplot graduation category and applications}
+qplot(x = graduation.category, y = application.count, xlab = "Graduation Rate", ylab = "Applications", ylim = c(0, 7500), geom = "boxplot", data = colleges.df)
+
+```
+<i>In a sentence, how would you interpret the relationship as evidenced by the boxplots?</i><p>
+
+
+It seems reasonable to assert that students performing better in high school (as measured by finishing in the top 10%) would seek 'better' schools all else equal (still, there may be selection biases whereby better performing students earn admittance to more difficult schools which would mitigate the relationship empirically). We will define 'better'
+<ul><li>popular, defined as application count
+<li>selective, calculated as the ratio of acceptance to application
+<li>attractive, calculated as ratio of enrolled to accepted
+
+Q5) Create a scatterplot relating high school performance (enrolled.from.top.10.percent) to school selectiveness (acceptance.count divided by application.count) with a trend line (as demonstrated in class) without displaying a confidence interval and add an additional layer that introduces a new geom type that lays a red horizontal line across the graph at the average of the acceptance count to application count ratio, calculated as mean(colleges.df$acceptance.count/colleges.df$application.count). 
+NOTE: We have not covered the horizontal line geom type in class. This question is included to have you research on your own some of the qplot functions.
+```{r Q5: scatterplot of high school performance and selectiveness}
+
+colleges.df$selectiveness = colleges.df$acceptance.count/colleges.df$application.count
+colleges.df$average_acceptance = mean(colleges.df$acceptance.count/colleges.df$application.count)
+qplot(data= colleges.df, x= enrolled.from.top.10.percent, y = selectiveness) + geom_smooth(method = "loess", se = FALSE ) + geom_hline(aes (yintercept = average_acceptance, color = "red"))
+
+
+```
+<i>In a sentence, how would you interpret the relationship as evidenced by the scatterplot?</i><p>
+
+
+Q6) Create a scatterplot relating high school performance (enrolled.from.top.10.percent) to school attractiveness (enrollment.count divided by acceptance.count) with color representing the school's private or public status. Include a line without the confidence interval (note: qplot will recognize the split between public and private and create two lines). 
+```{r Q6: scatterplot of high school performance and attractiveness}
+colleges.df$attractiveness <- (colleges.df$enrollment.count/colleges.df$acceptance.count)
+qplot(x = enrolled.from.top.10.percent, y = attractiveness, data = colleges.df, color = private)+ geom_smooth(method = 'loess', se = FALSE)+  layer(geom="point", stat = "identity",position=position_identity())
+
+```
+<i>In a sentence, how would you interpret the relationship as evidenced by the scatterplot?</i><p>
+
+
+To see if a similar relationship exists with selectiveness and attractiveness and percent of student body in the top 25% of their high school, we simply need to establish that the 10% and 25% are correlated.
+
+Q7) Create a scatterplot using the top 10% and top 25% attributes.
+```{r Q7: scatterplot of top 10 and 25 percent student body}
+
+qplot(x = enrolled.from.top.10.percent, y = enrolled.from.top.25.percent, data = colleges.df)
+
+```
+<i>In a sentence, how would you interpret the relationship as evidenced by the scatterplot?</i><p>
+
+
+Q8) Create a bubblechart using the ratio of application to fulltime enrollment (application.count/fulltime.undergrad.count) and ratio of acceptance to fulltime enrollment (acceptance.count/fulltime.undergrad.count) for the position aesthetics, the ratio of enrollment to fulltime enrollment (enrollment.count/fulltime.undergrad.count) as the size aesthetic, and the private/public status as color.
+```{r Q8: bubblechart}
+colleges.df$ratio <- (colleges.df$enrollment.count/colleges.df$fulltime.undergrad.count)
+
+qplot(x = (application.count/fulltime.undergrad.count), y = (acceptance.count/fulltime.undergrad.count),xlab = 'the ratio of application to fulltime enrollment', ylab = 'the ratio of acceptance to fulltime enrollment',  data= colleges.df, color = private, size= ratio)
+
+```
+<i>In a sentence, describe how the school that is below .5 on the y axis and above 2.5 on the x axis is different than the overall trend represented in the graph.</i><p>
+
+<i>Why are the public schools clustered where they are on the graph.</i><p>
+
+
+Q9) The code for a scatterplot showing applications (count) to acceptance (count) by college is below. Note that the axis ranges have been set the same so a numerical as well as relative selectiveness can be read from the graph. 
+```{r axis control}
+qplot(x = application.count, y = acceptance.count, xlim = c(0, 50000), ylim = c(0, 50000), color = private, data = colleges.df) 
+
+```
+
+A pocket of exclusive schools appears in the range of applications over 10,000 with acceptance less than 5,000. Create the same scatterplot but with an x axis between 10000 and 20000 and a y axis between 0 and 5000. Include in this graph the names of the schools close to the data points (black text, size aesthetic set to 4). 
+NOTE: We have not covered the text labels in class. This question is included to have you research on your own some of the qplot functions.
+```{r Q9: label school}
+qplot(x = application.count, y = acceptance.count,color = private, geom = "point", xlim = c(10000, 20000), ylim = c(0, 5000), data = colleges.df, size = 4)+ geom_text(aes(label = college), color = "black", size = 4)
+```
+
+Q10) Propose your own hypothesis of data relationships (only using the data available in the colleges.csv file) by editing the rmd file below with your proposition. Explore your proposition with the creation of a graph that you have defined.
+
+#_Mean of Graduation rate is around 70%
+The Alumni who are from public schools donate more in short term but private school people donte less intially but keep on donating consistently
+As the college graduation rate increases the number of applications also increase(scatter plot)
+More applications are received by schools with higher graduation rate
+Acceptance count and application count are linearly proportional
+
+```{r}
+qplot (x = graduation.rate, y = perc.alumni, color = private, data = colleges.df) + geom_smooth (se = FALSE)
+
+```
+```{r}
+qplot (x = application.count, y = acceptance.count, color= private, data = colleges.df) + geom_smooth (se = FALSE)
+```
+

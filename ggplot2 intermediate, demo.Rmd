@@ -1,0 +1,197 @@
+---
+output: pdf_document
+---
+x---
+title: "ggplot Intermediate demo"
+output: html_document
+---
+## ggplot from the ggplot2 package
+### Introducing ggplot
+
+Students will be able to create and enhance basic graphs using the ggplot function of ggplot2
+
+* Histograms/Density
+* Boxplots
+* Bar charts
+
+Enhancements include
+* Setting facets
+
+We will use the ggplot2 diamonds dataset.
+```{r load packages and data}
+library(ggplot2)
+library(scales) # to support $ tick mark axis labels
+library(dplyr)  # to group categories for bar charts
+
+head(diamonds) 
+str(diamonds) 
+dim(diamonds) 
+
+set.seed(1) 
+diamondsmall <- diamonds[sample(nrow(diamonds), 2500),]
+
+```
+
+It is often helpful to examine the distributions of a single variable before examining relationships between variables. Is there sufficient variation for the variable to be 'interesting'? Are some ranges of values dominant? Are there extreme outliers? 
+
+As a histogram 'takes' a single variable, mapping an x and y aesthetic, the latter not being needed, results in an error. Both histogram attempts below fail to render due to the 'extra' y aesthetic.
+```{r histogram and aesthetics, error = TRUE}
+diamondsmall.p <- ggplot(data = diamondsmall, aes(x = carat, y = price))
+diamondsmall.p + geom_histogram() 
+
+diamondsmall.p <- ggplot(data = diamondsmall, aes(x = carat, y = price))
+diamondsmall.p + geom_histogram(data = diamondsmall, aes(x = price)) 
+
+```
+
+An 'empty' ggplot object can be created with the data and aesthetics declared with the histogram geom or, more conventionally, the ggplot parameters declared and serve as the histogram parameters.
+```{r histogram}
+diamondsmall.p <- ggplot()
+diamondsmall.p + geom_histogram(data = diamondsmall, aes(x = price)) 
+
+diamondsmall.p <- ggplot(data = diamondsmall, aes(x = price))
+diamondsmall.p + geom_histogram() 
+```
+
+The most commonly manipulated histogram argument is binwidth followed by bin. binwidth specifies the span in which the histogram count is aggregated. For instance, in the present case, a binwidth of 1000 would result in ggplot aggregating a count of the number of records with 0, 1000, 2000, etc. as a midpoint. Setting a bin requires ggplot to calculate a span for each bin.
+
+The next commands use both binwidth and bin as well as sets some constant aesthetics to provide a more readable graph.
+```{r histogram binwidth}
+diamondsmall.p <- ggplot(data = diamondsmall, aes(x = price))
+diamondsmall.p + geom_histogram(binwidth = 2500, color = 'white', fill = 'cyan1') + scale_x_continuous(labels = dollar)
+
+diamondsmall.p <- ggplot(data = diamondsmall, aes(x = price))
+diamondsmall.p + geom_histogram(bins = 20, color = 'coral1', fill = 'green') + scale_x_continuous(labels = dollar)
+```
+<i>Does the price distribution surprise you?</i>
+<font color=red>The right skewed distribution seems intuitively agreeable. A uniform distribution would suggest that the supply of diamonds is consistent across all price ranges that might make sense in a world where there was uniform wealth/income. Similarly, a normal distribution would suggest an equally liquid market for both cheap and expensive diamonds. On the other hand, we do not know how the database was populated - if the diamond set is characteristic of the material world rather than social, perhaps we would find a different distribution. Of course, if million dollar diamonds were common, would they still be priced at a million dollars?</font>
+
+While histograms are typically used to explore a single variables' dispersion, categories within this dispersion can also be included. The histograms below render the histogram by the category of diamond cut (via the fill aesthetic). The first histogram stacks the categories, the second histogram places the categories side by side.
+```{r histogram categories}
+diamondsmall.p <- ggplot(data = diamondsmall, aes(x = price))
+diamondsmall.p + geom_histogram(aes(fill = cut), binwidth = 2500, color = 'white') + scale_x_continuous(labels = dollar)
+
+diamondsmall.p + geom_histogram(aes(fill = cut), binwidth = 2500, color = 'white', position = 'dodge') + scale_x_continuous(labels = dollar)
+```
+
+A density geom serves the same conceptual purpose as a histogram - to reveal a distribution. The density plot produces a curve (implied continuous function) and if often presented as relative frequency rather than count. The adjust parameter used below varies the sensitivity to the data and thus the 'smoothness' of the graph. 
+
+```{r density}
+diamondsmall.p <- ggplot(data = diamondsmall, aes(x = price))
+diamondsmall.p + geom_density() 
+diamondsmall.p + geom_density(adjust = .5) 
+diamondsmall.p + geom_density(adjust = 2) 
+```
+
+We may want to compare a distribution across categories - still another way to examine a relationship between two variables. In the following example, densities are rendered for diamond cut values using two aesthetics: fill and color (outline).
+
+Important .......
+```{r density pretty}
+diamondsmall.p <- ggplot(data = diamondsmall, aes(x = price, color = cut, fill = cut))
+diamondsmall.p + geom_density(adjust = 2, alpha = .1) + scale_x_continuous(labels = dollar) + scale_y_continuous(labels = percent)
+```
+<i>Is there anything interesting or predictable about the chart?</i>
+<font color=red>The lower quality cut (fair) has the relatively highest volume of low prices</font>
+
+Boxplots are another geom that represent the distribution of a variable. ggplot usually shows the distribution with respect to a category.
+
+
+```{r boxplot}
+diamondsmall.p <- ggplot(data = diamondsmall, aes(x = cut, y = price))
+diamondsmall.p + geom_boxplot() + scale_y_continuous(labels = dollar)
+
+# Use fill to reinforce the category distinctions
+diamondsmall.p <- ggplot(data = diamondsmall, aes(x = cut, y = price, fill = cut))
+diamondsmall.p + geom_boxplot() + scale_y_continuous(labels = dollar)
+# Represent the individual points (each quartile containing the same number of points)
+diamondsmall.p + geom_boxplot() + geom_jitter(width = 0.2) + scale_y_continuous(labels = dollar) 
+# Highlight the outliers
+diamondsmall.p + geom_boxplot(outlier.colour="red", outlier.size=2) + scale_y_continuous(labels = dollar) 
+
+# Set own breaks (which may make conventional interpretations difficult and counterproductive)
+diamondsmall.p + geom_boxplot(middle = mean(diamondsmall$price)) + scale_y_continuous(labels = dollar) # Is the mean by cut or an overall mean?
+```
+<i>Is there anything interesting or predictable about the chart?</i>
+<font color=red>The median price for the fair cut diamonds is higher than that of the ideal. Why?</font>
+
+Sometimes a quick review of the descriptive statistics helps. Per the stats below, the variance we identified in the histograms and density were overstated; price may not be significantly influenced by cut. However, the number of high outliers suggests that, of those willing to pay a high price, these buyers may prefer an ideal cut.
+```{r descriptive stats}
+sum(diamondsmall$cut == 'Ideal') # 973
+sum(diamondsmall$cut == 'Fair')  # 78
+
+summary(diamondsmall$price[diamondsmall$cut == 'Ideal'])  
+#   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+#    367     928    1916    3602    4854   18740 
+    
+summary(diamondsmall$price[diamondsmall$cut == 'Fair'])   
+#   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+#    369    2290    3477    4999    6598   18530 
+
+```
+
+The geom_bar is similar to the histogram geom when used for counts (the default) but can also be used to represented values across categories. However, the aggregation/summarization of the values must be performed within the code.
+```{r bar chart} # Important
+
+
+# The resulting bar chart is inaccurate, accumulating values in a way that makes no sense
+diamondsmall.p <- ggplot(data = diamondsmall, aes(x = cut, y = price))
+diamondsmall.p + geom_bar(stat = 'identity') + scale_y_continuous(labels = dollar)
+
+# The following bar chart uses the aggregated values - average of price by each cut category - passed as a data frame to the geom
+temp.diamond <- data.frame(tapply(diamondsmall$price, diamondsmall$cut, mean))
+temp.diamond.df <- data.frame(cut = row.names(temp.diamond), mean = temp.diamond)
+names(temp.diamond.df) <- c('cut','price.mean')
+diamondsmall.p <- ggplot(data = temp.diamond.df, aes(x = cut, y = price.mean))
+diamondsmall.p + geom_bar(stat = 'identity') + scale_y_continuous(labels = dollar)
+
+# library(dplyr) declared above
+cut.clarity.groups <- group_by(diamondsmall, cut, clarity)
+temp.diamond.df2 <- summarise(cut.clarity.groups, mean(price))
+names(temp.diamond.df2) <- c('cut','clarity','price')
+diamondsmall.p <- ggplot(data = temp.diamond.df2, aes(x = cut, y = price, fill = clarity))
+# stacked bars
+diamondsmall.p + geom_bar(stat = 'identity', color = 'white') + scale_y_continuous(labels = dollar)
+# side by side 
+diamondsmall.p + geom_bar(stat = 'identity', color = 'white', position=position_dodge()) + scale_y_continuous(labels = dollar)
+```
+<i>Does the second to last graph 'make sense'?</i>
+<font color=red>The aggregration by cut for average price by cut and clarity is misleading as displayed (what does the sum of the averages really mean?) though there may be some value in knowing that overall the average prices of Ideal are lower than Premium. Placing the bars side by side as shown in the last plot instead of stacking produces a more meaningful plot.</font>
+
+Note that stat layers can serve as equivalent to geom layers (often with stat override)
+```{r geo and stat layer equivalency}
+ggplot(data = diamondsmall, aes(clarity, price)) + 
+  geom_point(color = 'cyan1') + 
+  geom_point(stat = "summary", color = 'coral1')
+
+ggplot(data = diamondsmall, aes(clarity, price)) + 
+  geom_point(color = 'cyan1') + 
+  stat_summary(geom = "point", color = 'coral1')
+
+ggplot(data = diamondsmall, aes(carat, price)) + 
+  geom_point(color = 'cyan1') +
+  stat_smooth(geom = 'point', method = 'lm', color = 'coral1')
+
+ggplot(data = diamondsmall, aes(carat, price)) + 
+  geom_point(color = 'cyan1') +
+  geom_point(stat = 'smooth', method = 'lm', color = 'coral1') 
+
+```
+
+ggplot provides facet options to create multipanel graphs. .... IMPORTANT VERY VERY
+```{r facets}
+# We can add the category diamond color as a facet without altering the plot object created in the previous commands
+diamondsmall.p <- ggplot(data = diamondsmall, aes(x = cut, y = price))
+
+# To use a common y axis, use facet_grid
+diamondsmall.p + geom_boxplot() + scale_y_continuous(labels = dollar) + facet_grid(~ color)
+
+# facet_wrap will position the graphs one after another (and skip any without values)
+diamondsmall.p + geom_boxplot() + scale_y_continuous(labels = dollar) + facet_wrap(~ color)
+
+# facet_wrap with the number of rows defined
+diamondsmall.p + geom_boxplot() + scale_y_continuous(labels = dollar) + facet_wrap(~ color, nrow = 4)
+
+# Multiple category combinations can be used for facets
+diamondsmall.p + geom_boxplot() + scale_y_continuous(labels = dollar) + facet_wrap(clarity ~ color)
+
+```

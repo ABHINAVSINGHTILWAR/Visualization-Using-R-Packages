@@ -1,0 +1,287 @@
+---
+title: "ggplot Introduction, demo"
+output: html_document
+---
+## ggplot from the ggplot2 package
+### Introducing ggplot
+
+Students will be able to create and enhance basic graphs using the ggplot function of ggplot2
+
+* Scatterplot
+* Bubble charts
+* Lines
+
+Enhancements include
+* Setting aesthetics
+* Selecting layers and geoms (geometric objects defining type of graph)
+
+In this rmd file we review basic ggplot functionality, a function provided by the ggplot2 package that allows for the more elaborate generation of plots relative to qplot. ggplot typically interacts with data frames (while qplot can interact with data frames and distinct vectors)
+
+We will explore a 'greenest US cities' 2009 dataset.
+```{r load packages and data}
+library(ggplot2)
+library(scales) # for axes formatting
+library(mgcv) # for line smothing
+library(ggrepel) # for aligning plot data point labels
+
+green.cities.df <- read.csv('Greenest_Cities_in_the_US_2009.csv')
+head(green.cities.df) 
+str(green.cities.df) 
+dim(green.cities.df) 
+```
+
+We start we asking - does it pay to 'go green'? We compare cost savings and emissions prevented. A positive relationship suggests that companies save money by reducing emissions. As a matter of policy, a positive relationship might suggest that education rather than subsidiaries is a more efficient approach for encouraging conservation. 
+
+IMPORTANT
+```{r scatterplot cost savings and emissions prevented}
+# We need to declare to ggplot the data, the aesthetics, and the layer/geom. In our first command, the data is the green.cities.df data frame, the aesthetics provided are the position (x and y coordinates) and mapping of these aesthetics to data frame vectors (cost savings and emissions prevented), and the layer is defined with a geom object of point (the stat and position must also be decalred as the layer requires them but provides no default) 
+ggplot(data = green.cities.df, aes(y = cost.savings, x = emissions.prevented)) + 
+	layer(geom = 'point', stat = 'identity', position = 'identity') 
+# If we do not reference a dataset within the layer, the layer refers to the data declared with the ggplot command
+
+# Note that the parameter names are often omitted in practice. We will often use parameter reference by name instead of position for ease of interpretation
+ggplot(green.cities.df, aes(emissions.prevented, cost.savings)) + 
+       layer(geom = 'point', stat = 'identity', position = 'identity')  
+```
+
+ggplot2 functions produce objects. Using these objects to build and swap components allows for the use of a powerful and flexible graphing tool. We usually assign the ggplot object to a variable and then modify the variable to build and alter the plot. We then call the object to render it to screen. While we can assign qplot objects to variables, by design, qplot is more often used to simply render a graph rather than build and modify it. 
+```{r ggplot object}
+green.cities.p <- ggplot(data = green.cities.df, aes(y = cost.savings, x = emissions.prevented)) + 
+	layer(geom = 'point', stat = 'identity', position = 'identity') 
+green.cities.p # calling the object renders it to screen
+```
+
+It follows that we can built the object through multiple calls.
+```{r build scatterplot object cost savings and emissions prevented}
+green.cities.p <- ggplot(data = green.cities.df, aes(x = emissions.prevented, y = cost.savings))
+
+green.cities.p # No layer/geom exists, so nothing is rendered by calling the variable
+
+green.cities.p <- green.cities.p + 
+  layer(geom = 'point', stat = 'identity', position = 'identity')  
+# This command, by referring the original object, modifies our  ggplot object
+
+green.cities.p # By calling the object we render the plot
+
+green.cities.p <- ggplot(data = green.cities.df, aes(x = emissions.prevented, y = cost.savings)) # Reset the object
+
+# We can call the original object and include a geom to render to the screen without modifying the object
+green.cities.p + layer(geom = 'point', stat = 'identity', position = 'identity')  
+
+```
+<i>How would you interpret the graph with respect to our original query?</i><p>
+<font color=red>In some cases a (relative) minor reduction in emissions prevented resulted in significant cost savings; in other case, a significant reduction in emissions prevented resulted in significant cost savings. In no case was there no cost savings from a significant reduction in emissions.</font>
+
+The conventional ggplot syntax uses 'shortcut' names such as 'geom_point' to identify geoms. The layer can be built with reference to the geom_point and the accompanying syntax that allows identical results to the use of layer().
+```{r  geom_point}
+green.cities.p <- ggplot(data = green.cities.df, 
+                         aes(x = emissions.prevented, y = cost.savings)) 
+# We did not need to set the data and aesthetics parameters again it is included so the code snippets are 'self-contained'
+green.cities.p + geom_point() 
+#  stat = 'identity', position = 'identity' are the defaults for geom_point
+# The geom = 'point' is implied with the use of geom_point
+# If the data parameter is not declared, the data declared in the ggplot command is used
+```
+
+We can switch geoms with the data/aesthetics set and create new (simple or even bad) graphs. Note that not all aesthetics match all geoms, i.e., there is some interdependence between 
+```{r  geoms}
+green.cities.p <- ggplot(data = green.cities.df, 
+                         aes(x = emissions.prevented, y = cost.savings)) 
+green.cities.p + geom_boxplot() # boxplot is looking for a continuous variable and category rather than two continuous values but renders a boxplot to the best of its ability
+
+green.cities.p <- ggplot(data = green.cities.df, 
+                         aes(x = emissions.prevented, y = cost.savings)) 
+green.cities.p + geom_line() 
+```
+
+We can add the size aesthetic to the geom_point scatterplot to create a bubble chart. In the example below, we add the size aesthetic and map it to the number.of.buildings attribute.
+```{r bubblechart}
+green.cities.p <- ggplot(data = green.cities.df, 
+                         aes(x = emissions.prevented, y = cost.savings, size = number.of.buildings)) 
+green.cities.p + geom_point()  
+```
+
+We next enhance the presentation of the bubble chart-  
+
+
+IMPORTANT
+```{r bubblechart pretty}
+# We can add graph parameters (hard coded values such as color that are not mapped to the data)
+green.cities.p <- ggplot(data = green.cities.df, 
+                         aes(x = emissions.prevented, y = cost.savings, size = number.of.buildings))
+green.cities.p + layer(geom = 'point', stat = 'identity', position = 'identity', params=list(color='skyblue'))
+# think of a list as a set of key/value pairs; alternatively, we could simply declare the fixed aesthetic outside the aes function
+# Aesthetics scaled from the data are declared within the aes() function while constant are set as another geom parameter as in the case above (the I() notation only being necessary in qplot).
+
+# the same graph, using geom_point
+green.cities.p + geom_point(color='skyblue')
+
+# the same graph, reversing the y axis
+green.cities.p + geom_point(color='skyblue') + scale_y_reverse()
+
+# To further enhance the bubble chart, we will make the glyphs transparent with a border. This choice requires the use of the following parameters:
+# a shape value that includes a border (shape = 21)
+# the use of the stroke attribute to set the width of the shape border
+# the use of the alpha attribute for transparency (accepts a fraction with 1 meaning no transparency)
+green.cities.p + 
+	geom_point(shape = 21, color = "black", stroke = 1.5 , fill = "skyblue", alpha = 3/4) 
+
+# and exercising further control over the shapes...
+green.cities.p + 
+  geom_point(aes(shape = region)) + scale_shape(solid = FALSE)
+
+# We can change the axis labels and add a title with the labs parameters (there is a 'better' way to label the axes, coming later...)
+green.cities.p + 
+	geom_point(shape = 21, color = "white", stroke = 1.5, fill = "skyblue", alpha = 3/4) + 
+	labs(x = "Cost Savings", y = "Emissions Prevented", title = "Savings Going Green") 
+
+# By leveraging the scales package, we can change the x axis tick numbers to dollars
+# library(scales) - declared above
+green.cities.p + 
+	geom_point(shape = 21, color = "white", stroke = 1.5, fill = "skyblue", alpha = 3/4) + 
+	labs(x = "Cost Savings", y = "Emissions Prevented", title = "Savings Going Green") + 
+	scale_x_continuous(labels = dollar)
+
+# The labels, titles, and visual aspects of the graphs can be managed holistically through themes to be covered in another class
+```
+
+A chief benefit of ggplot is the creation (and alteration) of graphs via layers, with each layer representing different geoms and/or datasets
+
+
+VERY IMPORTANT.....
+```{r adding layers}
+# First, note that we can declare the data and aesthetics with the geom to achieve the same results. 
+green.cities.p <- ggplot() 
+green.cities.p + 
+	geom_point(data = green.cities.df, aes(x = emissions.prevented, y = cost.savings, size = number.of.buildings), shape = 21, color = "white", stroke = 1.5, fill = "skyblue", alpha = 3/4) + 
+	labs(x = "Cost Savings", y = "Emissions Prevented", title = "Savings Going Green") + 
+	scale_x_continuous(labels = dollar)
+
+
+
+
+#iMPORTANT HAI YE   
+
+# We will create a simulated mock 'prior' dataset
+set.seed(1) # allows for consistent 'random' number generation
+mock.x <- abs(rnorm(20, mean(green.cities.df$emissions.prevented), sd(green.cities.df$emissions.prevented)))
+mock.y <- abs(rnorm(20, mean(green.cities.df$cost.savings), sd(green.cities.df$cost.savings)))
+mock.df <- data.frame(mock.x, mock.y)
+# We now have a bivariate, independent (zero correlation) normal distribution
+
+green.cities.p + 
+	geom_point(data = green.cities.df, aes(x = emissions.prevented, y = cost.savings, size = number.of.buildings), shape = 21, colour = "white", stroke = 1.5, fill = "skyblue", alpha = 3/4) + 
+	labs(x = "Cost Savings", y = "Emissions Prevented", title = "Savings Going Green") +
+	
+	geom_point(data = mock.df, aes(x = mock.x, y = mock.y), color = "red") + 
+
+	scale_x_continuous(labels = dollar)
+
+# If we do not declare the data within the geom reference, the data declared within ggplot is used. Below we combine reference to ggplot data and geom_point data
+green.cities.p <- ggplot(data = green.cities.df, 
+                         aes(x = emissions.prevented, y = cost.savings, size = number.of.buildings)) 
+green.cities.p	+ 
+	geom_point(shape = 21, color = "white", stroke = 1.5, fill = "skyblue", alpha = 3/4) + 
+	geom_point(data = mock.df, aes(x = mock.x, y = mock.y, size = 1), color = "red", show.legend = FALSE) 
+# Note that size was declared in the second geom; otherwise, this layer will recognize that size was declared in ggplot2 and look for number.of.buildings within the mock data
+# Note too that the legend is 'turned off' for the second geom otherwise the legend uses both size attributes (red on top of blue) for the legend glyph. 
+```
+
+It follows that a powerful feature of ggplot is the provision to combine different types of geoms across layers (using the same or different datasets). We will add a line through geom_smooth (more accurately, we are plotting the continuous conditional means of y|x).
+```{r layers of different geoms}
+green.cities.p <- ggplot(data = green.cities.df, 
+                         aes(x = emissions.prevented, y = cost.savings, size = number.of.buildings)) 
+
+green.cities.p	+ 
+	geom_point(shape = 21, color = "white", stroke = 1.5, fill = "skyblue", alpha = 3/4) +
+	geom_smooth(method = "lm", se = FALSE, color = "coral2", show.legend = F) 
+# Note that method, se (standard error bar), color, and show.legend are not declared as aesthetics as they are not mapped to data; instead, they are 'hard-coded' or invariant to the data values
+
+# We will map the aau membership of the relevant city to the color of the glyph in the geom_point layer. Note that the geom_smooth renders the same as previously
+green.cities.p	+ 
+	geom_point(aes(color = aau.in.msa), alpha = 3/4) +
+	geom_smooth(method = "lm", se = FALSE, show.legend = F) 
+
+# If instead, the color aesthetic is declared in the ggplot command, other layers can reference these values. In this case, this results in the rendering of two lines (for the two membership values, yes and no)
+green.cities.p <- ggplot(data = green.cities.df, 
+                         aes(x = emissions.prevented, y = cost.savings, size = number.of.buildings, color = aau.in.msa)) 
+green.cities.p	+ 
+	geom_point() +
+	geom_smooth(method = "lm", se = FALSE, show.legend = F) 
+
+# If color is declared in the geom_smooth layer it overrides this relationship back to the ggplot values
+green.cities.p <- ggplot(data = green.cities.df, 
+                         aes(x = emissions.prevented, y = cost.savings, size = number.of.buildings, color = aau.in.msa)) 
+green.cities.p	+ 
+	geom_point() +
+	geom_smooth(method = "lm", se = FALSE, color = "coral2", show.legend = F) 
+
+# Alternatively, the color can be ignored by setting the smooth aesthetic of group to 1, rendering a single line on the graph
+green.cities.p <- ggplot(data = green.cities.df, 
+                         aes(x = emissions.prevented, y = cost.savings, size = number.of.buildings, color = aau.in.msa)) 
+green.cities.p	+ 
+	geom_point() +
+	geom_smooth(aes(group=1), method = "lm", se = FALSE, show.legend = F) 
+
+```
+
+Finally, we will render a line for each of the two scatterplots, one using the green cities data and the other the randomly generated data. 
+
+
+
+Very Very Important .....
+```{r layer combos of geoms}
+
+green.cities.p <- ggplot()
+green.cities.p + 
+	geom_point(data = green.cities.df, aes(x = emissions.prevented, y = cost.savings, size = number.of.buildings), color = "skyblue") + 
+	geom_point(data = mock.df, aes(x = mock.x, y = mock.y), color = "red") + 
+	geom_smooth(data = green.cities.df, aes(x = emissions.prevented, y = cost.savings), method = "lm", se = FALSE, color = "skyblue") +
+	geom_smooth(data = mock.df, aes(x = mock.x, y = mock.y), method = "lm", se = FALSE, color = "red") +
+	labs(x = "Cost Savings", y = "Emissions Prevented", title = "Savings Going Green") +
+	scale_x_continuous(labels = dollar)
+
+# We could use fullrange=TRUE parameter to extend the mock data rendered line across the full x axis
+```
+
+The lines above are built using the declared method lm (linear model). The default method is loess (if the # of rows is less than 1000) which builds a line by 'weighting' the data in the immediate range more heavily (in other words, the line seems to conform to or follow the data more closely). One of the pwoerful features of ggplot (and R in general) is the number of specialized packages that can be leveraged. In the code below, we will render two lines, one using the default loess and the other using a general additive model from the mgvc package. 
+
+We will also label the data points by creating a new layer using a text geom
+```{r build scatterplot object with line}
+# library(mgcv) - already declared
+green.cities.p <- ggplot(data = green.cities.df, aes(x = emissions.prevented, y = cost.savings, size = number.of.buildings)) 
+green.cities.p + 
+	geom_point(color = "skyblue") + 
+	geom_smooth(method = 'gam', se = FALSE, color = "skyblue", linetype = 3, size = 1) +
+	geom_smooth(se = FALSE, color = "red", linetype = 5, size = .5) +
+	labs(x = "Cost Savings", y = "Emissions Prevented", title = "Savings Going Green") +
+	scale_x_continuous(labels = dollar) + 
+  geom_text(aes(label = msa), size = 3)
+
+# Note that the layers in this case do not have local data and aesthetic declarations
+# library("ggrepel") - declared above
+green.cities.p <- ggplot(data = green.cities.df, aes(x = emissions.prevented, y = cost.savings, size = number.of.buildings)) 
+green.cities.p + 
+	geom_point(color = "skyblue") + 
+	geom_smooth(method = 'gam', se = FALSE, color = "skyblue", linetype = 3, size = 1) +
+	geom_smooth(se = FALSE, color = "red", linetype = 5, size = .5) +
+	labs(x = "Cost Savings", y = "Emissions Prevented", title = "Savings Going Green") +
+	scale_x_continuous(labels = dollar) + 
+  geom_text_repel(aes(label = msa), size = 3)
+
+```
+<i>Thoughts on the final graph?</i>
+<font color='red'>The plot suggests that heteroskedasticity may be a concern for statistical analysis (via the cone shaped pattern). New York should be one of the larger glyphs simply based upon overall size; perhaps the 'participating buildings' are subject to a self-selection bias and thus it may not be sound to generalize our findings.</font>
+
+###Notes  
+#### Note 1
+Official ggplot2 documentation can be found at docs.ggplot2.org/current/
+
+#### Note 2
+ggplot2 2.0 was released in December, 2015. Read about it at blog.rstudio.org/2015/12/21/ggplot2-2-0-0/
+
+#### Note 3
+Use the args command to understand options for how a layer can be built
+```{r args}
+args(geom_point) 
+```

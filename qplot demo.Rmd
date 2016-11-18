@@ -1,0 +1,362 @@
+---
+title: "qplot Introduction"
+output:
+  pdf_document:
+    number_sections: yes
+    toc: yes
+  html_document:
+    number_sections: yes
+    toc: yes
+---
+## qplot from the ggplot2 package
+### Introducing qplot
+
+Students will be able to create and enhance basic graphs using the qplot function of ggplot2
+
+* Scatterplot
+* Box Plot
+* Histogram and density
+
+Enhancements include
+
+* Setting aesthetics, including shape, color, and position
+* Selecting geoms (geometric objects defining type of graph)
+* Setting facets
+
+In this rmd file we review qplot functionality. qplot is a function provided by the ggplot2 package that allows for the 'quick' generation of plots but with less elaborate extensions than standard ggplot2 capabilities. Much of the work below is based upon chapter 2 of Hadley Wickham's book, <i>ggplot2: Elegant Graphics for Data Analysis</i>.
+
+```{r load qplot}
+library(ggplot2)
+```
+
+Let's create a simple plot using the diamonds dataset, included with the ggplot2 package.
+
+First, let's become more familiar with the diamonds dataset.
+```{r data frame review}
+head(diamonds) # Displays first six rows of data frame and the attributes; in this case, the four C's, the price, and the physical dimensions of the diamond
+str(diamonds)  # Displays data types and (some) values 
+dim(diamonds)  # Almost 54k rows
+```
+
+Next, let's glance at the qplot function description by calling the help function (resulting in a help text file provided in a pop-up window in R or in the Help pane in RStudio). The help file identifies function parameters and provides the parameter default values (if any).
+```{r help}
+ ?qplot# does not provide the aesthetic parameters
+```
+
+The following qplot command will produce a scatterplot (two quantitative attributes) in the RStudio Plots pane (or a pop-up window in R) using the attributes carat (1 carat = 200 milligrams) and price (in US dollars) from the diamonds dataset.
+```{r basic qplot}
+qplot(x = carat, y = price, data = diamonds) # if performance is slow, see note 2 below
+```
+
+We can tweak the default display settings such as the shape and color of the glyphs as shown next.
+```{r basic qplot tweaked}
+qplot(x = carat, y = price, shape = I(1), color = I('skyblue'), data = diamonds) # The I() notation will be explained below
+```
+
+<i>Do you find anything interesting about the results represented in the graph?</i><p>
+<font color=red>
+There are a few outliers - one diamond, priced at about $17500, is quite large (5 carats) relative to others in the price range. Why?
+<p>
+Perhaps the outliers have significant imperfections (as measured by clarity)? Examining this single record may be a better descriptive statistics task than visualization task (see Note 4), but the scatterplot does bring to the analyst's attention interesting singular features and/or data quality issues.</font>
+
+Let's plot the size (dimensions) against the mass (where we would expect to see a strong correlation). Note that the plot's x axis represents the result of the multiplication of three diamond dimensions of x, y, and z (not to be confused with the qplot parameter names). 
+```{r qplot with x transformation}
+qplot(x = x*y*z, y = carat, data = diamonds)
+```
+<p><b>The flexibility to manipulate the original data directly vs. creating new variables and/or multiple versions of data files to be read into R is a crucial distinction between data analysis programming tools and data analysis GUI tools.</b>
+
+<i>A few diamonds appear to break the relationship between mass and size. Why? </i><p>
+<font color=red>
+Perhaps the outliers are simply data entry errors? See Note 3 for a code snippet that removes these outliers (which is not necessarily the best solution...)
+</font>
+
+Returning to the original graph, 
+```{r}
+qplot(x = carat, y = price, data = diamonds)
+# We can change the default color setting the color attribute to a constant
+qplot(x = carat, y = price, color = I('skyblue'), data = diamonds) 
+```
+<p><i>Note the left boundaries around integers - why the break in values?</i><p>
+<font color=red>Evidence of rounding up? Per the Gemological Institute of America website, diamonds are weighed in thousandths of a carat and recorded in hundredths. If the thousandths place is a 9, the carat will be rounded to the next hundredth. The graph appears to show a greater effect - what other explanations might explain this observation? 
+<ul><li>'Cheating'? 
+<li>Self-selection (e.g., no one buys a 1.9 carat diamond so they are not carried in inventory and thus not part of the dataset)?</ul></font>
+
+Intuitively, it appears an exponential curve may fit this dataset well. Let's again transform our raw data by taking the log of the carat and price values to change the presentation of the plot to relative growth.
+```{r x and y transformations}
+qplot(x = log(carat), y = log(price), data = diamonds)
+```
+<p><i>Why would we care to convert this to a linear relationship?</i><p>
+<font color=red>A linear relationship is a better fit for some statistical tests (e.g., OLS). The relationship is more intuitive (but are the measures/interpretation more intuitive?)</font>
+
+### qplot aesthetics
+There are still more dataset attributes that we can use to (possibly) enhance our understanding of the diamonds dataset (or more importantly, enhance our understanding of the data generating mechanism). To include these additional attributes, there are a number of visual features in qplot that we can use to enhance the scatterplot (which uses position to convey information). We will initially include what ggplot2 refers to as <b>aesthetics</b>. Aesthetics were included in our prior plot, but using default constants, e.g., color as black or skyblue, not varying by any dataset values. When varying by data values, ggplot2 converts the data value to a graph value (e.g., 'Fair' cut will be converted to rgb value #fff000000) through a process called scaling.
+
+We earlier speculated about the quality of the diamonds as one factor that could explain variation in price among diamonds of a similar size. Quality is represented in the dataset as clarity and cut, both qualitative values. Thus glyph size(form) is not an appropriate additional visual feature, but glyph characteristics of color and shape(form) are good candidates for these categorical attributes. Let's use color to represent cut, using the color scale parameter which will map the dataset values to particular colors.
+
+<i>Before rendering the plot, what would we expect to see with respect to the colors on the scatterplot?</i><p>
+<font color=red>What relationship might we expect to see between cut and price? As cut is a determinant in price, we would expect to see clustering of colors along the Y axis (e.g., if blue represents the cut value 'Ideal', we would generally not expect to see blue in the lower price range). What relationship might we expect to see between color and carats? 
+</font>
+
+```{r aesthetics: color}
+qplot(x = carat, y = price, data = diamonds, color = cut) # Note that a legend is automatically generated
+```
+<p><i>Did we see what we anticipated?</i><p>
+<font color=red>It appears that the anticipated relationship between cut and price does not hold - Fair cut diamonds and Ideal cut diamonds appear across the Y axis.
+</font>
+
+<i>What can we say about the relationship between cut and carat?</i><p>
+<font color=red>It appears that larger diamonds may be more difficult to cut... we would need to explore this further but it is an example of how visualization serves in the exploration of data.
+</font>
+
+ggplot2 selects colors as far apart on the color wheel as possible but as the number of categories increases, the color distinction necessarily diminishes. Bear in mind too that different monitors and output in general will introduce variation outside of our control. As previously discussed, color may not be meaningful for all those reading the plot.
+
+Still another issue is that rendering such a large dataset creates some visual difficulties such as overlapping glyphs. We can use the alpha aesthetic to provide to the viewer some sense of distinction between glyphs.
+```{r aesthetics: alpha}
+
+qplot(x = carat, y = price, data = diamonds, color = cut, alpha = .33) 
+# Note the legend for alpha - this is created because we did not use the I() qualifier, so the .33 is treated as a constant vector of .33 instead of a literal
+```
+
+Let's add shape to represent clarity.
+```{r aesthetics: shape}
+qplot(x = carat, y = price, data = diamonds, color = cut, shape = clarity) 
+```
+
+Note the warning that ggplot2 only provides six shape variations per their interpretation of visual best practices. While we can add our own shapes, a simpler solution is to simply exchange the shape and color attribute mapping (provided that cut does not have more than six values)
+```{r aesthetics: swapping scales and dataset attributes}
+qplot(x = carat, y = price, data = diamonds, shape = cut, color = clarity) 
+```
+With this many data points, shape is difficult to broadly perceive. One interesting note is that the three largest diamonds appear to all be of Fair cut.
+
+### qplot geoms
+ggplot2 defines the geometry of the graph glyphs as geoms (geographic objects). Not every geom works for every type of data, so the analysts' judgement is required in selecting parameter values for the geoms.
+
+We first create a smaller dataset simply for ease in identifying the visual distinctions we will be reviewing.
+```{r create smaller diamond dataset for geoms}
+set.seed(1) # To assure that the same 'random' rows are selected across efforts
+dsmallgeom <- diamonds[sample(nrow(diamonds), 900),]
+```
+
+The value 'point' is the geom default value, so explicitly including the parameter geom with this value renders the original graph
+```{r geoms: point}
+qplot(x = carat, y = price, geom = "point", data = dsmallgeom) # the value 'point' is a literal, not a variable, so it must be enclosed in quotes
+```
+
+Changing the geom to smooth (one of the possible parameter values) creates a line representing the 'trend' of the data.
+```{r geoms: smooth}
+qplot(x = carat, y = price, data = dsmallgeom, geom = "smooth")
+```
+
+This trend may better visually represented as a combination of the line and scatterplot, enabled through including both as parameter values (in general, when providing multiple parameter values, R expects these values enveloped in the 'c' command).
+```{r geoms: point and smooth}
+qplot(x = carat, y = price, geom = c("point", "smooth"), data = dsmallgeom)
+qplot(x = carat, y = price, geom = c("point"), data = dsmallgeom) + geom_smooth()
+```
+<i>Why does the line shading become thicker (i.e., widens) across the Y axis?</i><p>
+<font color=red>Intuitively, it seems that the widening corresponds with fewer data points. Specifically, the shading represents a confidence interval, technically representing the uncertainty of the data sample (not to be confused with the prediction interval) and displays a range where we would expect to see the data 'fall.'
+</font>
+
+We can create an identical graph by adding a layer that creates the line that is placed 'over' the scatterplot. This layering is the power of the ggplot function through which multiple datasets can be combined each with its own aesthetics (qplot is limited to a single dataset). See note 5 for a bit more on layers.
+
+```{r geoms and layers}
+qplot(x = carat, y = price, geom = c("smooth"), data = dsmallgeom) + 
+  layer(geom = "point", 
+        stat = "identity",
+        position=position_identity()
+        )
+
+```
+
+We can turn the shading 'off' and simply render the trend line by setting the se parameter to FALSE (se presumably standing for standard error).
+```{r geoms: smooth without shading}
+qplot(x = carat, y = price, geom = c("smooth"), se = FALSE, data = dsmallgeom) + 
+  layer(geom = "point", 
+        stat = "identity",
+        position=position_identity()
+        )
+
+```
+
+In qplot, the line is constructed following a loess function (developed by William Cleveland), in which the line (polynomial or linear) is fit based upon a subset of the data 'closest' to the line being rendered with the closest data within this subset weighted the most significantly. The line itself is determined by minimizing the 'residual' between the line and the Y axis data (traditionally, the data being explained or predicted). Think of it as the construction of many lines pieced together and smoothed. Note, loess does not work well with large data sets (it is computationally intensive). 
+
+loess is the default value of the method parameter. We can use different methods to fit the line, such as the linear model (lm, from the  package STATS that is included in the base R installation). We can leverage model estimations from other packages to render a line as well (e.g., using a robust linear model from the MASS package).
+```{r geoms: alternate line rendering lm}
+qplot(x = carat, y = price, geom = c("smooth"), se = FALSE, method = "lm", data = dsmallgeom) + 
+  layer(geom = "point", 
+        stat = "identity",
+        position=position_identity()
+        )
+
+```
+
+###Additional graph types: continuous and categorical
+We've introduced the use of aesthetics to render qualitative factors in a scatterplot. The qualitative attributes could also be used to define the type of graph. For instance, recall our earlier questions about the relationship between cut (qualitative/categorical value or in R terminology a factor) and price. The relationship (if any) may be even easier to detect via a boxplot, rendered by setting the geom to boxplot.
+```{r geoms: boxplot}
+qplot(x = cut, y = price, geom = "boxplot", data = dsmallgeom)
+```
+Note that the cut categories are in a correct order (worst to best). This does not need to be the case; R does not 'know' that Premium is not as good as Ideal. In the 'background' R uses integers to represent the factors; we can control the assignment of these integers that in turn allow the proper ordering of factors.
+
+Let's bring the y axis scale in tighter using the ylim parameter to focus on the quartiles and not the outliers.
+```{r geoms: boxplot zoom in}
+qplot(x = cut, y = price, geom = "boxplot", ylim = c(0, 9000), data = dsmallgeom)
+```
+<i>It appears that the price increases as the cut quality decreases! Why?</i>
+<p><font color=red>Recall that we also found that cut was related to carats (see the '{r aesthetics: color}' code chunk) with more 'Fair' cuts associated with larger diamonds. In that case, as seen with the smooth geom graph we may be indirectly seeing the positive relationship of carat and price.</font>
+
+Let's look at cut and carat together.
+```{r geoms: boxplot by factor}
+qplot(x = cut, y = carat, geom = "boxplot", data = dsmallgeom)
+```
+
+Keep in mind that the boxplots should not be examined as an equal weighting across categories - there are only a few Fair cut diamonds and a large number of Ideal cut diamonds in our dsmallgeom dataset. For a sense of weighting across categories, we can use a jitter geom.
+```{r geoms: jitter}
+qplot(x = cut, y = carat, geom = 'jitter', data = dsmallgeom)
+```
+
+And boxplot and jitter together (note that the layer is now named rather than set in the layer parameters)
+```{r geoms: boxplot and jitter}
+qplot(x = cut, y = carat, geom = 'boxplot', data = dsmallgeom) + geom_jitter()
+```
+
+So the quantiles in the Fair cut category may be subject to greater uncertainty (which in itself does not affect the expected average) with extreme values collectively having a larger possible impact (though again, keep in mind the boxplot is showing a median, so we are not vulnerable to a single outlier but rather an outlier 'draw' of values). This is most likely NOT the explanation, but with random pulls of data (how we generated the dsmallgeom) it is a possibility. 
+
+###Additional graph types: single variables (counts and frequencies)
+Sometimes the most important analysis may be the simplest - identifying the distribution of the data. We will return to the full dataset and create a histogram for price.
+```{r geoms: histogram}
+qplot(x = price, geom = 'histogram', data = diamonds)
+```
+We can see that diamonds are more frequently priced 'relatively' low; that is, the distribution is heavily skewed to the right (aka positively skewed) and peaks to the left. As the code below confirms, the mean of price is greater than the mode, characteristic of positively skewed distributions such as a beta distribution (with the appropriately set alpha and beta parameters) or Poisson distribution (usually applied to counts, not continuous variables). 
+```{r}
+mean(diamonds$price) > median(diamonds$price)
+```
+
+qplot created 'bins', i.e., intervals, for the histogram and within those intervals tallied the number of diamonds with prices within the internal. We can control the bin size with the binwidth command, such as selecting a bin for each $1000 increment in price.
+```{r geoms: histogram and bins}
+qplot(x = price, data = diamonds, geom = 'histogram', binwidth = 1000)
+```
+
+Bins can be rendered by categorical values instead of continuous variable intervals. For instance, we can create a histogram for the cut values that produces a bar chart of count (in fact, in this case the geom values of histogram and bar render the same graph).
+```{r geoms: histogram and factors}
+qplot(x = cut, data = diamonds, geom = 'bar')
+```
+
+We can further elaborate each bin using a fill attribute. In the following example, we show the relative weighting of cut categories for each price bin interval.
+```{r geoms: histogram and adding factors}
+qplot(x = price, data = diamonds, geom = 'histogram', binwidth = 1000, fill = cut)
+```
+
+For a continuous variable, the density geom is usually the geom of preference. The general interpretation is the same for the histogram but instead of a count we see a relative frequency (you might think of it loosely as a probability).
+```{r geoms: density}
+qplot(x = price, data = diamonds, geom = 'density')
+```
+
+We can set the adjust parameter to smooth the line (in some cases the curve jumps may be misleading or 'noise').
+```{r geoms: density and adjust}
+qplot(x = price, data = diamonds, geom = 'density', adjust = 10)
+```
+
+We can also use the fill parameter with a density to show multiple densities by category (and we include the alpha parameter to ease the distinction between cut values).
+```{r geoms: density and adjust and fill}
+qplot(x = price, data = diamonds, geom = 'density', adjust = 10, fill = cut, alpha=I(.3))
+```
+
+###Multiple graphs: facets
+ggplot2 allows the generation of multiple graphs, each graph representing a factor value of a variable, through the use of facets. Faceting is essentially an alternative to portraying additional attributes as aesthetics, representing factor values not through color or symbols but alternating graphs. The syntax looks a bit different and brings us closer to the main ggplot2 functions.
+```{r facets}
+qplot(x = price, data = diamonds, geom = 'density', adjust = 10, fill = color, alpha=I(.3)) + facet_grid(. ~ cut)
+```
+
+###Closing Thoughts
+<i>What other general thoughts might occur to the discerning analyst examining this data?</i>
+<p><font color=red>How was the original dataset assembled? Were the records randomly sampled? From what overall database? For what purpose?</font>
+
+###Notes
+#### Note 1
+Consistent with the base R plotting functions, labels can be added to graphs via the main, xlab, and ylab parameters. Other parameters (e.g., col.main) from plot are not available through standard use.
+```{r Note 1}
+qplot(x = carat, y = price, data = diamonds, color = clarity, main = "My qplot", xlab = "My xlab name", ylab = "My ylab name") 
+```
+
+#### Note 2
+On some computers the plot rendering may have taken a moment. Create a randomly-selected subset of the dataset and use this dataset if needed. The new dataset can be run against the previous qplot command simply changing the data parameter value since the column names of the new dataset are the same.
+```{r Note 2}
+set.seed(1) # To assure that the same 'random' rows are selected
+dsmall <- diamonds[sample(nrow(diamonds), 1000),]
+qplot(x = dsmall$carat, y = dsmall$price)
+```
+
+#### Note 3
+Data clean up or 'tidying' is better addressed in other classes, but a quick clean up command using the dplyr package (also written by Hadley Wickham) is performed above.
+```{r Note 3}
+library(dplyr)
+diamonds2 <- filter(diamonds, x >0 & y > 0 & z >0 & x*y*z < 1000)
+dim(diamonds)[1] - dim(diamonds2)[1] # number removed from diamonds dataset
+```
+
+#### Note 4
+The code below allows us to compare our outlier large but cheap diamond with other diamonds in the similar price range
+```{r Note 4}
+diamonds[diamonds$carat > 4.5,]
+summary(diamonds[diamonds$price > 16000,]) # this command does include our outlier
+```
+Of the more than 1000 diamonds in this price range, very few (23) have a fair cut (like our outlier). The outlier clarity is I1, equally rare in this price range. It appears this outlier is 'legitimate' (i.e., not a data entry error) - it is a large diamond of unusually low quality.
+
+#### Note 5
+To save a graph for use in another program, in RStudio select Export from the Viewer pane, from R right click and save the graph on the clipboard, or use the ggsave command as noted below.
+```{r Note 5}
+ggsave(file = 'myplot.jpeg', dpi = 72, qplot(x = carat, y = price, geom = c("point"), data = diamonds))
+```
+
+#### Note 6
+Consistent with most of R, the result of a ggplot2 function is an object. We can assign a variable to the object and thus manipulate it. This is of most benefit in ggplot2 through the use of layers that are most effectively managed via the ggplot rather than qplot function. However, a simple example is provided below.
+```{r Note 6}
+p <- qplot(x = carat, y = price, geom = c("smooth"), data = dsmallgeom)  
+p <- p +   layer(geom = "point", 
+                 stat = "identity",
+                 position=position_identity())
+p
+summary(p)
+```
+
+#### Note 7
+When rendering the rmd file, you can include just comments and graphs without the code (e.g., to use as a report) by including the echo=FALSE parameter
+```{r Note 8, echo=FALSE}
+qplot(carat, price, data = diamonds)
+```
+
+#### Note 8
+Below is an example of a line embedded in a scatterplot using the base R package's plot function.
+```{r Note 9}
+plot(x = dsmallgeom$carat, y = dsmallgeom$price)
+abline(lm(dsmallgeom$price ~ dsmallgeom$carat), col='red')
+```
+
+#### Note 9
+Official ggplot2 documentation can be found at https://cran.r-project.org/web/packages/ggplot2/ggplot2.pdf
+
+#### Note 10
+GIA Color Scale
+<ul>
+<li>D - F: Colorless
+<li>G - J: Near Colorless
+<li>K - M: Faint Color
+<li>N - R: Very Light Color
+<li>S - Z: Light Color
+</ul>
+```{r color factors}
+levels(diamonds$color)
+```
+
+GIA Cut Values
+<ul>
+<li>Excellent
+<li>Very Good
+<li>Good
+<li>Fair
+<li>Poor
+</ul>
+
+The American Gem Society includes an additional value of Ideal
+```{r cut factors}
+levels(diamonds$cut)
+```

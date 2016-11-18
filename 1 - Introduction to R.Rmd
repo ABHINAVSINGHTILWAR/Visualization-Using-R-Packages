@@ -1,0 +1,88 @@
+---
+title: "Introduction to R"
+output: pdf_document
+---
+
+##Learning Themes: Data, Vectors, Data Frames, Packages
+For the moment, let's treat R as if it included three types of data: numbers, strings, and booleans (true or false), with multiple values stored together called a vector and multiple vectors stored together as a data frame. 
+
+R can work like a calculator, carrying our mathematical operations on numbers
+```{r calculator}
+5 + 5
+100 * 3
+(1 + 2) * 3
+3^3
+```
+
+We can set the results of these operations to variables and then use the variables in the operations. The <- assigns the value to the variable. Rather than use the <- value we could have used the = sign, but the standard R convention is to use the former (there are also subtle differences between the two when used in functions which is beyond the scope of this class).
+```{r variables}
+my.name <- 'Hadley'
+my.name
+
+my.number <- 5 + 5
+three.hundred <- 100 * 3
+kids.age <- (1 + 2) * 3
+three.cubed <- 3^3
+
+my.number.times.three.hundred <- my.number * three.hundred
+my.number.times.three.hundred
+
+kPi <- 3.14 # constant, not intended to change
+radius <- 5
+circle.area <- pi * radius^2
+circle.area
+```
+
+Sometimes the results of an operation are based on a condition, in which case the variable contains one of two values, TRUE or FALSE
+```{r boolean}
+test <- 3>2
+test
+
+test <- test + test
+test # R will treat TRUE as a 1 and FALSE as a 0 if I use the boolean in a mathematical operation
+
+if (3>2) {test <- 'Bigger'}
+test # note that I used the same variable, 'test' for both tests so the original value no longer exists 
+
+test <- ifelse(3<2, 1,0) # 1 usually is used to indicate true
+test
+```
+
+Our operations will usually be performed on vectors rather than individual numbers roughly following matrix algebra commands
+```{r vectors}
+weekly.highs <- c(97, 91, 97, 98, 99, 100, 99) # anything after the pound sign on the same line is a comment
+weekly.highs <- weekly.highs + 1
+weekly.highs
+```
+
+R includes built in commands called functions that simplify our work. We will use the function 'mean' to calculate the average value of the weekly highs. The function 'mean' is operating on the vector 'weekly.highs' - in this case the vector is a parameter of the function mean. In other words, the parameter is what the function uses as its 'raw materials' to produce a result.
+```{r functions}
+weekly.highs <- c(97, 91, 97, 98, 99, 100, 99) # anything after the pound sign on the same line is a comment
+average.weekly.highs <- mean(weekly.highs) # mean is one R built in function
+average.weekly.highs
+```
+
+A data frame is a table (rows and columns) with each column as a vector usually representing an attribute or measure of interest and each row representing one 'real world thing' that is described by the attributes. 
+```{r data frames}
+inflation <- c(.06,.03,.04, .05,.12,.21,.05,.08,.02,.04)
+unemployment <- c(.05,.04,.03, .06,.11,.18,.05,.06,.03,.03)
+years.education <- c(14,13,15, 18,9,10,15,14,13,12)
+city.names <- c("Dallas", "Houston", "El Paso", "Austin", "Detroit", "Cleveland", "Minneapolis", "Chicago", "Denver", "Santa Fe")
+economy <- data.frame(inflation, unemployment, years.education, city.names)
+economy
+
+economy2 <-data.frame(inflation, unemployment, years.education) # no city.names
+row.names(economy2) <- city.names # The row name is not a vector but a lable
+economy2
+```
+
+R is an open source solution developed by statisticians (and others) around the world. The range of functionality is much broader than any single individual would typically find useful. So while certain functions are included in 'base' R, additional functions can be added by downloading packages. For instance, imagine that biologists are monitoring algae growth on a pond, capturing measures every week. Week 1 there were 10 'units' of algae, week 2 there were 100 units, and in week 3 there were 1000 units. What is the average number of units over the three weeks?
+```{r packages}
+algae.units.by.week <- c(10, 100, 1000)
+mean(algae.units.by.week) # The last value of 1000 'weighs' the average towards its value
+
+# install.packages('psych') # note the quotes around psych
+library(psych) # load the package into memory
+geometric.mean(algae.units.by.week) # the geometric mean is sometimes considered a more representative number when averaging values growing at an exponential rate
+```
+
